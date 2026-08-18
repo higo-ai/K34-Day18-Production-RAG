@@ -3,6 +3,10 @@ from __future__ import annotations
 """Production RAG Pipeline — Bài tập NHÓM: ghép M1+M2+M3+M4."""
 
 import os, sys, time
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -64,22 +68,18 @@ def run_query(query: str, search: HybridSearch, reranker: CrossEncoderReranker) 
     reranked = reranker.rerank(query, docs, top_k=RERANK_TOP_K)
     contexts = [r.text for r in reranked] if reranked else [r.text for r in results[:3]]
 
-    from config import OPENAI_API_KEY
-    if OPENAI_API_KEY and contexts:
+    if contexts:
         try:
-            from openai import OpenAI
-            client = OpenAI()
+            from src.m5_enrichment import call_llm
             context_str = "\n\n".join(contexts)
-            resp = client.chat.completions.create(model="gpt-4o-mini", messages=[
-                {"role": "system", "content": "Trả lời CHỈ dựa trên context. Nếu không có → nói 'Không tìm thấy.'"},
-                {"role": "user", "content": f"Context:\n{context_str}\n\nCâu hỏi: {query}"},
-            ])
-            answer = resp.choices[0].message.content
+            system_prompt = "Trả lời CHỈ dựa trên context. Nếu không có → nói 'Không tìm thấy.'"
+            user_prompt = f"Context:\n{context_str}\n\nCâu hỏi: {query}"
+            answer = call_llm(system_prompt, user_prompt, max_tokens=300)
         except Exception as e:
             print(f"  ⚠️  LLM generation failed: {e}", flush=True)
             answer = contexts[0]
     else:
-        answer = contexts[0] if contexts else "Không tìm thấy thông tin."
+        answer = "Không tìm thấy thông tin."
     return answer, contexts
 
 

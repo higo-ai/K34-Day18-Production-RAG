@@ -10,6 +10,14 @@ Usage:
 import json
 import os
 import time
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
+from dotenv import load_dotenv
+load_dotenv()
 
 
 def main():
@@ -23,8 +31,11 @@ def main():
     # Step 1: Basic Baseline
     print("\n📌 STEP 1: Running Basic RAG Baseline...")
     print("-" * 40)
-    from naive_baseline import main as run_baseline
-    run_baseline()
+    if os.path.exists("reports/naive_baseline_report.json") or os.path.exists("naive_baseline_report.json"):
+        print("  [!] naive_baseline_report.json đã tồn tại. Bỏ qua chạy lại Baseline để tiết kiệm API Key và thời gian.")
+    else:
+        from naive_baseline import main as run_baseline
+        run_baseline()
 
     # Step 2: Production Pipeline
     print("\n📌 STEP 2: Running Production Pipeline...")
